@@ -5,18 +5,12 @@ import os
 
 from sqlalchemy import desc
 
-# Use /tmp for SQLite in serverless environments (Vercel allows writes to /tmp)
-# Fall back to local directory for local development
-if os.path.exists('/tmp'):
-    db_path = '/tmp/todo.db'
-else:
-    basedir = os.path.abspath(os.path.dirname(__file__))
-    db_path = os.path.join(basedir, "todo.db")
-
+basedir = os.path.abspath(os.path.dirname(__file__))
+db_path = os.path.join(basedir, "todo.db")
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ECHO'] = False  # Disable echo in production
+app.config['SQLALCHEMY_ECHO'] = True
 db = SQLAlchemy(app)
 
 class Todo(db.Model):
@@ -59,20 +53,18 @@ def delete(Sr_No):
 
 @app.route('/update/<int:Sr_No>', methods= ['GET','POST'])
 def update(Sr_No):
-    todo = Todo.query.filter_by(Sr_No=Sr_No).first()
-    if not todo:
-        return redirect(url_for('index'))
-    
     if request.method=='POST':
-        title = request.form.get('title', '').strip()
-        desc = request.form.get('desc', '').strip()
-        if title and desc:
-            todo.title = title
-            todo.desc = desc
-            db.session.add(todo)
-            db.session.commit()
+        title = request.form['title']
+        desc = request.form['desc']
+        todo = Todo.query.filter_by(Sr_No=Sr_No).first()
+        todo.title = title
+        todo.desc = desc
+        db.session.add(todo)
+        db.session.commit()
+
         return redirect(url_for('index'))
         
+    todo = Todo.query.filter_by(Sr_No=Sr_No).first()
     return render_template('update.html', todo=todo)
 
 @app.route('/about')
